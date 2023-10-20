@@ -2,10 +2,12 @@ from fastapi import FastAPI,responses
 import rasterio
 from PIL import Image
 import numpy as np
-# from auxiliary_functions import normalize, gammacorr
 
 app = FastAPI()
 
+#-------------------------------------------------------------------
+# Root endpoint
+#-------------------------------------------------------------------
 
 @app.get("/", tags=["root"])
 async def read_root():
@@ -27,8 +29,11 @@ async def read_root():
     """
     
     return responses.HTMLResponse(content=html_content)
+#-------------------------------------------------------------------
 
-
+#-------------------------------------------------------------------
+# Attributes endpoint
+#-------------------------------------------------------------------
 @app.get("/attributes/", tags=["attributes"])
 def get_image_attributes():
     try:
@@ -52,16 +57,28 @@ def get_image_attributes():
         return {"An error occurred": str(e)}
 
 
+#-------------------------------------------------------------------
 
-#Auziliary functions 
+
+# Auxiliary functions to treat the sentinel 2 image 
+# Source: https://www.satmapper.hu/en/rgb-images/
+# Function to normalize a band to 8-bit range (0-255)
 def normalize(band):
+    # Calculate the minimum and maximum values in the band
     band_min, band_max = band.min(), band.max()
+    # Normalize the band to the 8-bit range (0-255)
     return ((band - band_min) / (band_max - band_min) * 255).astype(np.uint8)
+
+# Function to apply gamma correction to a band
 def gammacorr(band):
-    gamma=2
+    gamma = 2  # Adjust the gamma value as needed
+    # Apply gamma correction to the band
     return np.power(band, 1/gamma)
 
-@app.get("/thumbnail")
+#-------------------------------------------------------------------
+#Thumbnail endpoint
+#-------------------------------------------------------------------
+@app.get("/thumbnail", tags=["thumbnail"])
 async def create_thumbnail( resolution: int = 256):
     try:
            # Open the TIFF image using rasterio
@@ -92,3 +109,4 @@ async def create_thumbnail( resolution: int = 256):
         return responses.FileResponse(thumbnail_path)
     except Exception as e:
         return {"An error occurred": str(e)}
+#-------------------------------------------------------------------
